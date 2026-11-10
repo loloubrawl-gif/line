@@ -10010,7 +10010,7 @@ local function launch(entry)
                     break
                 end
                 for _, child in ipairs(playerGui:GetChildren()) do
-                    if child:IsA("ScreenGui") and child.Name == "LINE" and child ~= previousGui then
+                    if child:IsA("ScreenGui") and child.Name == "NAIKO" and child ~= previousGui then -- modules keep their own GUI name
                         loaded = true
                         break
                     end
