@@ -9908,10 +9908,28 @@ for _, entry in ipairs(CATALOG) do
                 Library:Notify({ Title = "Launch failed", Content = tostring(src), Type = "error", Duration = 5 })
                 return
             end
+            -- the module builds its own ScreenGui also named NAIKO; the original hub
+            -- drops its own shell as soon as that one appears. Do the same or the
+            -- module's lookups can hit our GUI instead of its own.
+            local previousGui = Library.ScreenGui
             local ok3, err = pcall(function() loadstring(src, "=naiko:" .. entry.id)() end)
             if not ok3 then
                 Library:Notify({ Title = "Module error", Content = tostring(err), Type = "error", Duration = 6 })
+                return
             end
+            task.spawn(function()
+                local playerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+                for _ = 1, 120 do
+                    task.wait(0.1)
+                    if not playerGui then return end
+                    for _, child in ipairs(playerGui:GetChildren()) do
+                        if child:IsA("ScreenGui") and child.Name == "NAIKO" and child ~= previousGui then
+                            pcall(function() Library:Unload() end)
+                            return
+                        end
+                    end
+                end
+            end)
         end })
     end
 end
