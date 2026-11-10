@@ -114,7 +114,7 @@ local prevOnly, prevHub = ENV.NAIKO_LIB_ONLY, ENV.NAIKO_HUB
 ENV.NAIKO_LIB_ONLY = true
 ENV.NAIKO_HUB = true
 local Library = loadstring([[
-return local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -9892,22 +9892,26 @@ return Library
 ]])()
 ENV.NAIKO_LIB_ONLY = prevOnly
 ENV.NAIKO_HUB = prevHub
-assert(type(Library) == "table", "library failed")
+assert(type(Library) == "table", "library failed: the library chunk did not return a table")
 
 local Window = Library:CreateWindow({ Title = "Naiko Offline", Subtitle = "keyless", Logo = "peak" })
 local Tab = Window:Tab({ Name = "Games", Icon = "gamepad-2", Description = "keyless" })
+local Section = Tab:Section({ Name = "Modules", Icon = "layers", Side = "Left" })
 Library:SetOpen(true)
-ENV.NAIKO_HUB = { Library = Library, Window = Window, Alive = true, Keyed = true }
+ENV.NAIKO_HUB = { Library = Library, Window = Window, Games = {}, Keyed = true, Alive = true }
 
 for _, entry in ipairs(CATALOG) do
-    local url = MODULES[entry.id]
-    if url then
-        Tab:Button({ Name = entry.name, Callback = function()
-            local ok2, src = pcall(game.HttpGet, game, url)
-            if not ok2 or type(src) ~= "string" then
-                Library:Notify({ Title = "Download failed", Content = tostring(src), Type = "error", Duration = 4 }) return
+    if MODULES[entry.id] then
+        Section:Button({ Name = entry.name, Callback = function()
+            local ok2, src = pcall(function() return game:HttpGet(MODULES[entry.id]) end)
+            if not ok2 or type(src) ~= "string" or #src < 200 then
+                Library:Notify({ Title = "Launch failed", Content = tostring(src), Type = "error", Duration = 5 })
+                return
             end
-            loadstring(src, "=naiko:" .. entry.id)()
+            local ok3, err = pcall(function() loadstring(src, "=naiko:" .. entry.id)() end)
+            if not ok3 then
+                Library:Notify({ Title = "Module error", Content = tostring(err), Type = "error", Duration = 6 })
+            end
         end })
     end
 end
